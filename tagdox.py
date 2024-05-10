@@ -5,6 +5,9 @@ Created on Thu Jun 17 09:28:24 2021
 @author: MaJian
 
 ## 近期更新说明
+#### v0.28.0.0 2024年5月10日
+增加了通过配置文件调整界面尺寸的功能。
+
 #### v0.27.4.0 2024年3月23日
 空格预览功能优化，增加了对md和txt的内容预览，并增加了纵向滚动功能。
 
@@ -67,7 +70,7 @@ Created on Thu Jun 17 09:28:24 2021
 增加功能：可以解析当前文件夹内的readme.md文件，并作为文件夹备注显示在列表下面。
 
 """
-
+import json
 import tkinter as tk
 
 from tkinter import ttk
@@ -106,7 +109,7 @@ from libs.widgets.windows import TdTextWindow
 # import send2trash # 回收站（目前作废）
 import logging
 #
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG) # logging.INFO
 
 ###################################################################
 
@@ -119,7 +122,7 @@ class td_const():
         self.URL_ADV = 'https://gitee.com/horse_sword/tagdox/issues'  # 提建议的位置
         self.URL_CHK_UPDATE = 'https://gitee.com/horse_sword/tagdox/releases'  # 检查更新的位置
         self.TAR = 'Tagdox / 标签文库'  # 程序名称
-        self.VER = 'v0.27.4.0'  # 版本号
+        self.VER = 'v0.28.0.0'  # 版本号
 
 conf = td_conf()  # 关键参数
 cst = td_const()  # 常量
@@ -1709,7 +1712,9 @@ def exec_tree_add_items(tree_obj, dT, search_items=None) -> None:
     k1 = 0  # 存储根目录下的编号
     k2 = 0
     k_all = 0
-
+    logging.debug(f'get_search_items_sub_folder 用时 = {time.time()-time0}')
+    # 上面这一步其实不太花时间
+    #
     logging.debug('筛选条件：')
     # print(tmp_search_items)
     logging.debug(f'标签是 {res_tag}')
@@ -4914,7 +4919,7 @@ def set_style(style):
                         fieldbackground=app.COLOR_DICT['darkback_1'],  # 没有行部分的颜色
                         background='#2a333c',
                         foreground='white',
-                        indent=40,
+                        indent=conf.ui_conf['FOLDER_STEP'],
                         # rowheight=60, # 行间距
                         # relief='flat',
                         # borderwidth=0,
@@ -5244,6 +5249,7 @@ class td_main_app:
         pass
         conf.ui_ratio = (conf.SCREEN_WIDTH / 1920)
         #
+        #
         self.PIC_DICT = {
             "龙猫": tk.PhotoImage(file=".//resources/imgs/龙猫.gif"),
             #
@@ -5312,6 +5318,7 @@ class td_main_app:
         self.clipboard_state = 'move'
         self.clipboard_folder = ''  # 待移动的文件夹
         #
+        #
         # 框架设计 ############################################
         #
         self.frame_window = ttk.Frame(self.window, padding=(0, 0, 0, 0), relief='flat', borderwidth=0)
@@ -5323,7 +5330,7 @@ class td_main_app:
                                    # width=int(w_width * 0.4),
                                    padding=(0, 0, 0, 0),
                                    borderwidth=0,
-                                   width=int(conf.ui_ratio *320),  # 没有用，因为 Frame 默认是根据控件大小改变的。
+                                   width=int(conf.ui_ratio * conf.ui_conf['FRAME_FOLDER_WIDTH']),  # 没有用，因为 Frame 默认是根据控件大小改变的。
                                    relief='flat')  # ,)
         self.frame_left.pack(side=tk.LEFT, expand=0, fill=tk.Y, padx=0, pady=0)  # padx=10,pady=5)
         self.frame_left.pack_propagate(0)  # 设置为0则框架不被内部撑大。默认是1.
@@ -5380,7 +5387,7 @@ class td_main_app:
         self.frame_main.pack(expand=1, fill=tk.BOTH, padx=0, pady=0)  # padx=10, pady=0)
         # 标签区
         # self.frame_tags = ttk.Frame(self.frame_left)  # ,width=600)
-        self.frame_tags = ttk.Frame(self.frame_main, width=int(conf.ui_ratio * 300))
+        self.frame_tags = ttk.Frame(self.frame_main, width= int(conf.ui_ratio * conf.ui_conf['FRAME_RIGHT_WIDTH']))
         self.frame_tags.pack(side=tk.RIGHT, expand=0, fill=tk.Y, padx=0, pady=0)  # padx=10,pady=5)
         #
         # readme 区域
@@ -5506,7 +5513,7 @@ class td_main_app:
                                                  yscrollcommand=self.bar_sub_tag_v.set)  # , height=18)
 
             self.tree_lst_sub_tag.heading("tags", text="全部标签", anchor='w', command=tree_tag_search)
-            self.tree_lst_sub_tag.column('tags', width=int(220*conf.ui_ratio), anchor='w')
+            self.tree_lst_sub_tag.column('tags', width=int(conf.ui_ratio * conf.ui_conf['FRAME_RIGHT_WIDTH']), anchor='w')
             self.bar_sub_tag_v.config(command=self.tree_lst_sub_tag.yview)
             #
             if True:  # conf.TREE_SUB_SHOW == 'tag':
@@ -5568,8 +5575,6 @@ class td_main_app:
                                       text='菜单',
                                       # anchor="center",
                                       )  # ,command=show_online_help)
-
-
         #
         # 布局： #####
         #    
@@ -5757,7 +5762,7 @@ class td_main_app:
                 # 检查当前文件夹内是否有readme.md
                 # 读取前5000字
                 if 'readme.md' in tmp_files or 'README.md' in tmp_files:
-                    app.frame_readme.configure(height= int(conf.SCREEN_HEIGHT*0.33)) # 原来是600
+                    app.frame_readme.configure(height= conf.ui_conf['FRAME_README_HEIGHT']) # 原来是600
                     try:
                         with open(current_path+'/readme.md', 'rb') as f:
                             text_to_show = f.read(5000).decode('utf-8')
@@ -5919,10 +5924,10 @@ class td_tree_file():
         #
         self.tree.column('#0', width=700, anchor='w')  # ,stretch=tk.NO)
         self.tree.column('index', width=30, anchor='center')
-        self.tree.column('file', width=600, minwidth=100, anchor='w')
-        self.tree.column('tags', width=200, minwidth=100, anchor='w')
-        self.tree.column('modify_time', width=120, minwidth=120, anchor='e')  # ,stretch=tk.NO)
-        self.tree.column('size', width=60, minwidth=80, anchor='e')  # ,stretch=tk.NO)
+        self.tree.column('file', width= conf.ui_conf['TREE_WIDTH_FILENAME'], minwidth=100, anchor='w') # 600
+        self.tree.column('tags', width= conf.ui_conf['TREE_WIDTH_TAGS'], minwidth=100, anchor='w')  # 200
+        self.tree.column('modify_time', width=conf.ui_conf['TREE_WIDTH_MODIFY_TIME'], minwidth=80, anchor='e')  # ,stretch=tk.NO)  # 120
+        self.tree.column('size', width=conf.ui_conf['TREE_WIDTH_SIZE'], minwidth=40, anchor='e')  # ,stretch=tk.NO)  # 60
         self.tree.column('file0', width=80, anchor='w')
         #
         self.tree.heading('#0', text='名称', anchor='w', command=tree_order_filename)

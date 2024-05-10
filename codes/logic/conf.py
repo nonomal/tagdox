@@ -34,7 +34,28 @@ class td_conf:
         except:
             logging.debug('读取标准模式的配置文件')
             self.OPTIONS_FILE = 'options_for_tagdox.json'  # 配置文件的名称 # 已改完
-
+        #
+        # 用于显示尺寸的设置
+        self.ui_conf = {'FRAME_FOLDER_WIDTH': 360,
+                        'FOLDER_STEP': 36,
+                        'FRAME_README_HEIGHT': int(self.SCREEN_HEIGHT * 0.5),  #
+                        'FRAME_RIGHT_WIDTH': 280,
+                        'TREE_WIDTH_FILENAME': 600,
+                        'TREE_WIDTH_TAGS': 200,
+                        'TREE_WIDTH_MODIFY_TIME': 120,
+                        'TREE_WIDTH_SIZE': 60
+                        }
+        # 显示尺寸的配置文件
+        try:
+            with open('./resources/config/ui_conf.json','r') as f:
+                ui_conf_ext = json.load(f)
+            for _key in self.ui_conf.keys():
+                if _key in ui_conf_ext.keys() and ui_conf_ext[_key]>0:
+                    self.ui_conf[_key] = ui_conf_ext[_key]
+            logging.debug(self.ui_conf)
+        except:
+            pass
+        #
         self.OPT_DEFAULT = {
             "options": {
                 "sep": "^",
